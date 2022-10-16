@@ -48,58 +48,118 @@ describe.only("Vault unit tests", function () {
       this.VAULT_INITIAL_BALANCE = VAULT_INITIAL_BALANCE;
     });
 
-    it("Should allow a user to stake the minimum amount", async function () {
-      await this.vault.connect(this.signers.addr1).stake({ value: this.MINIMUM_AMOUNT });
+    describe("Single staking at the same time", function () {
+      this.beforeEach(async function () {
+        await this.vault.connect(this.signers.addr1).stake({ value: this.MINIMUM_AMOUNT });
+      });
 
-      const vaultBalance: BigNumber = <BigNumber>(
-        await ethers.provider.getBalance(this.vault.address)
-      );
-      expect(vaultBalance).to.equal(this.VAULT_INITIAL_BALANCE);
+      it("Should have the same balance after staking", async function () {
+        const vaultBalance: BigNumber = <BigNumber>(
+          await ethers.provider.getBalance(this.vault.address)
+        );
+        //vault balance should remain the same
+        expect(vaultBalance).to.equal(this.VAULT_INITIAL_BALANCE);
+      });
 
-      const cUnderlyingBalanceBN: BigNumber = <BigNumber>(
-        await this.compoundETH
-          .connect(this.signers.addr1)
-          .callStatic.balanceOfUnderlying(this.vault.address)
-      );
+      it("Should stake twice for same user", async function () {
+        await this.vault.connect(this.signers.addr1).stake({ value: this.MINIMUM_AMOUNT });
+        expect(await this.vault.connect(this.signers.addr1).getStakesNumber()).to.equal(2);
+      });
 
-      const cEthBalanceBN: BigNumber = <BigNumber>(
-        await this.compoundETH.connect(this.signers.addr1).callStatic.balanceOf(this.vault.address)
-      );
+      it("Should have the correct balance of cETH and ETH in Compound v2", async function () {
+        //check the Compound v2 balance of vault based on
+        //cETH balance and exchangeRate
 
-      let exchangeRateCurrentBN: BigNumber = <BigNumber>(
-        await this.compoundETH.connect(this.signers.addr1).callStatic.exchangeRateCurrent()
-      );
+        //get ETH balance
+        const cUnderlyingBalanceBN: BigNumber = <BigNumber>(
+          await this.compoundETH
+            .connect(this.signers.addr1)
+            .callStatic.balanceOfUnderlying(this.vault.address)
+        );
 
-      const exchangeRateCurrent: number = Number(ethers.utils.formatEther(exchangeRateCurrentBN));
-      const cUnderlyingBalance: number = Number(ethers.utils.formatEther(cUnderlyingBalanceBN));
-      const cEthBalance: number = Number(ethers.utils.formatEther(cEthBalanceBN));
+        //get cETH balance
+        const cEthBalanceBN: BigNumber = <BigNumber>(
+          await this.compoundETH
+            .connect(this.signers.addr1)
+            .callStatic.balanceOf(this.vault.address)
+        );
 
-      //multiply current rate with cETH balance to get ETH balance (underlying asset)
-      const expectedUnderlyingBalance: number = exchangeRateCurrent * cEthBalance;
+        //get exchangeRate
+        const exchangeRateCurrentBN: BigNumber = <BigNumber>(
+          await this.compoundETH.connect(this.signers.addr1).callStatic.exchangeRateCurrent()
+        );
 
-      //at least last 15 decimals will be correct
-      expect(cUnderlyingBalance.toPrecision(15)).to.equal(
-        expectedUnderlyingBalance.toPrecision(15)
-      );
+        const exchangeRateCurrent: number = Number(ethers.utils.formatEther(exchangeRateCurrentBN));
+        const cUnderlyingBalance: number = Number(ethers.utils.formatEther(cUnderlyingBalanceBN));
+        const cEthBalance: number = Number(ethers.utils.formatEther(cEthBalanceBN));
+
+        //multiply current rate with cETH balance to get
+        //ETH balance (underlying asset) in the Compound v2
+        const expectedUnderlyingBalance: number = exchangeRateCurrent * cEthBalance;
+
+        //at least last 15 decimals
+        expect(cUnderlyingBalance.toPrecision(15)).to.equal(
+          expectedUnderlyingBalance.toPrecision(15)
+        );
+      });
+
+      it("Should return 1 stake for addr1", async function () {
+        expect(await this.vault.connect(this.signers.addr1).getStakesNumber()).to.equal(1);
+      });
     });
 
-    it("Should allow multiple users to stake on the same time", async function () {
-      await Promise.all([
-        this.vault.connect(this.signers.addr1).stake({ value: this.MINIMUM_AMOUNT }),
-        this.vault.connect(this.signers.addr2).stake({ value: this.MINIMUM_AMOUNT }),
-        this.vault.connect(this.signers.addr3).stake({ value: this.MINIMUM_AMOUNT }),
-      ]);
+    describe("Multiple stakings at the same time", function () {
+      this.beforeEach(async function () {
+        await Promise.all([
+          this.vault.connect(this.signers.addr1).stake({ value: this.MINIMUM_AMOUNT }),
+          this.vault.connect(this.signers.addr2).stake({ value: this.MINIMUM_AMOUNT }),
+          this.vault.connect(this.signers.addr3).stake({ value: this.MINIMUM_AMOUNT }),
+        ]);
+      });
 
-      const vaultBalance: BigNumber = <BigNumber>(
-        await ethers.provider.getBalance(this.vault.address)
-      );
-      expect(vaultBalance).to.equal(this.VAULT_INITIAL_BALANCE);
-    });
+      it("Should have the same balance after staking", async function () {
+        const vaultBalance: BigNumber = <BigNumber>(
+          await ethers.provider.getBalance(this.vault.address)
+        );
+        expect(vaultBalance).to.equal(this.VAULT_INITIAL_BALANCE);
+      });
 
-    it("Should return 1 stake for addr1", async function () {
-      await this.vault.connect(this.signers.addr1).stake({ value: this.MINIMUM_AMOUNT });
+      it("Should have the correct balance of cETH and ETH in Compound v2", async function () {
+        //check the Compound v2 balance of vault based on
+        //cETH balance and exchangeRate
 
-      expect(await this.vault.connect(this.signers.addr1).getStakesNumber()).to.equal(1);
+        //get ETH balance
+        const cUnderlyingBalanceBN: BigNumber = <BigNumber>(
+          await this.compoundETH
+            .connect(this.signers.addr1)
+            .callStatic.balanceOfUnderlying(this.vault.address)
+        );
+
+        //get cETH balance
+        const cEthBalanceBN: BigNumber = <BigNumber>(
+          await this.compoundETH
+            .connect(this.signers.addr1)
+            .callStatic.balanceOf(this.vault.address)
+        );
+
+        //get exchangeRate
+        const exchangeRateCurrentBN: BigNumber = <BigNumber>(
+          await this.compoundETH.connect(this.signers.addr1).callStatic.exchangeRateCurrent()
+        );
+
+        const exchangeRateCurrent: number = Number(ethers.utils.formatEther(exchangeRateCurrentBN));
+        const cUnderlyingBalance: number = Number(ethers.utils.formatEther(cUnderlyingBalanceBN));
+        const cEthBalance: number = Number(ethers.utils.formatEther(cEthBalanceBN));
+
+        //multiply current rate with cETH balance to get
+        //ETH balance (underlying asset) in the Compound v2
+        const expectedUnderlyingBalance: number = exchangeRateCurrent * cEthBalance;
+
+        //at least last 15 decimals
+        expect(cUnderlyingBalance.toPrecision(15)).to.equal(
+          expectedUnderlyingBalance.toPrecision(15)
+        );
+      });
     });
 
     it("Should revert with the minimum amount error", async function () {
@@ -124,6 +184,49 @@ describe.only("Vault unit tests", function () {
       ]);
 
       await time.increase(convertDaysToTimestamp(1));
+    });
+
+    it("Should compute the correct reward per stake using the vault function", async function () {
+      const { reward } = await computeReward(this.MINIMUM_AMOUNT, 1);
+      const rewardComputedByVaultBN: BigNumber = <BigNumber>(
+        await this.vault.connect(this.signers.addr1).computeRewardPerStake(0)
+      );
+
+      const rewardComputedByVault: string = ethers.utils.formatEther(rewardComputedByVaultBN);
+
+      expect(rewardComputedByVault).to.equal(reward);
+    });
+
+    it("Should compute the correct reward for all the user's stakes using the vault function", async function () {
+      const { reward } = await computeReward(this.MINIMUM_AMOUNT, 1);
+      const rewardComputedByVaultBN: BigNumber = <BigNumber>(
+        await this.vault.connect(this.signers.addr1).computeTotalRewardsByStaker()
+      );
+
+      const rewardComputedByVault: string = ethers.utils.formatEther(rewardComputedByVaultBN);
+
+      expect(rewardComputedByVault).to.equal(reward);
+    });
+
+    it("Should allow a user to harvest his rewards", async function () {
+      await this.vault.connect(this.signers.addr1).harvestReward(0);
+
+      const balanceOfAddr1BNdevUSDC: BigNumber = <BigNumber>(
+        await this.devUSDC.balanceOf(this.signers.addr1.address)
+      );
+      const balanceOfAddr1devUSDC: string = ethers.utils.formatEther(balanceOfAddr1BNdevUSDC);
+
+      const { reward } = await computeReward(this.MINIMUM_AMOUNT, 1);
+      //send the reward to user and reset the since parameter
+      expect(balanceOfAddr1devUSDC).to.equal(reward);
+
+      //but keep the stake active
+      const totalStaked: BigNumber = <BigNumber>(
+        await this.vault
+          .connect(this.signers.owner)
+          .getTotalStakedOfStaker(this.signers.addr1.address)
+      );
+      expect(totalStaked).to.equal(this.MINIMUM_AMOUNT);
     });
 
     describe("Single unstaking at the same time", function () {

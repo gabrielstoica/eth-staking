@@ -26,7 +26,6 @@ contract Vault is ReentrancyGuard, Ownable {
         address user;
         uint256 amount;
         uint256 since;
-        uint256 cETH;
     }
 
     struct Stakeholder {
@@ -53,6 +52,20 @@ contract Vault is ReentrancyGuard, Ownable {
             msg.value >= minimumAmountToStake,
             "Minimum amount to stake is 5 ETH"
         );
+        _;
+    }
+
+    modifier isValidStake(uint256 stakeIndex) {
+        require(
+            stakeIndex >= 0 && stakeIndex <= lastStakeId[msg.sender],
+            "Wrong stake ID!"
+        );
+        uint256 user_index = stakes[msg.sender];
+        require(
+            stakeholders[user_index].address_stakes.length >= 1,
+            "Zero active stakes."
+        );
+
         _;
     }
 
@@ -83,10 +96,6 @@ contract Vault is ReentrancyGuard, Ownable {
         uint256 index = stakes[msg.sender];
         uint256 timestamp = block.timestamp;
 
-        uint256 rate = compoundETH.exchangeRateCurrent();
-        rate = rate.div(1e18);
-        uint256 cETH = amount.div(rate);
-
         //add to Compound v2
         (bool success, ) = address(compoundETH).call{value: amount}(
             abi.encodeWithSignature("mint()")
@@ -97,7 +106,7 @@ contract Vault is ReentrancyGuard, Ownable {
             index = addStakeholder(msg.sender);
         }
 
-        Stake memory new_stake = Stake(msg.sender, amount, timestamp, cETH);
+        Stake memory new_stake = Stake(msg.sender, amount, timestamp);
         stakeholders[index].address_stakes.push(new_stake);
         lastStakeId[msg.sender]++;
 
@@ -124,19 +133,17 @@ contract Vault is ReentrancyGuard, Ownable {
         return reward;
     }
 
-    function harvestReward(uint256 stakeIndex) public nonReentrant {
+    function harvestReward(uint256 stakeIndex)
+        public
+        isValidStake(stakeIndex)
+        nonReentrant
+    {
         uint256 user_index = stakes[msg.sender];
         Stake memory currentStake = stakeholders[user_index].address_stakes[
             stakeIndex
         ];
-        uint256 currentTimestamp = block.timestamp;
-        uint256 sinceIsStaking = currentStake.since;
-        uint256 reward = computeStakeReward(currentStake);
 
-        require(
-            currentTimestamp - sinceIsStaking >= 1 weeks,
-            "Minimum period until you can harvest your reward is 7 days"
-        );
+        uint256 reward = computeStakeReward(currentStake);
 
         stakeholders[user_index].address_stakes[stakeIndex].since = block
             .timestamp;
@@ -153,7 +160,6 @@ contract Vault is ReentrancyGuard, Ownable {
             stakeIndex
         ];
         uint256 currentStakeAmount = currentStake.amount;
-        uint256 currentStakecETH = currentStake.cETH;
 
         //redeem staked ETH from Compound v2
         (bool success, ) = address(compoundETH).call(
@@ -188,13 +194,9 @@ contract Vault is ReentrancyGuard, Ownable {
     function computeRewardPerStake(uint256 stakeIndex)
         public
         view
+        isValidStake(stakeIndex)
         returns (uint256)
     {
-        require(
-            stakeIndex >= 0 && stakeIndex <= lastStakeId[msg.sender],
-            "Wrong stake ID!"
-        );
-
         uint256 user_index = stakes[msg.sender];
         Stake memory currentStake = stakeholders[user_index].address_stakes[
             stakeIndex
@@ -202,42 +204,6 @@ contract Vault is ReentrancyGuard, Ownable {
 
         uint256 reward = computeStakeReward(currentStake);
         return reward;
-    }
-
-    function getTotalRewardOfStaker(address staker)
-        public
-        view
-        onlyOwner
-        returns (uint256)
-    {
-        require(
-            staker != address(0),
-            "Staker address must not be equal to zero-address!"
-        );
-
-        uint256 totalReward;
-        uint256 user_index = stakes[staker];
-        Stake[] memory currentStakes = stakeholders[user_index].address_stakes;
-        for (uint256 i = 0; i < currentStakes.length; i++) {
-            totalReward = totalReward + computeStakeReward(currentStakes[i]);
-        }
-        return totalReward;
-    }
-
-    function getTotalReward() public view onlyOwner returns (uint256) {
-        uint256 totalReward;
-        for (uint256 i = 0; i < stakeholders.length; i++) {
-            for (
-                uint256 j = 0;
-                j < stakeholders[i].address_stakes.length;
-                j++
-            ) {
-                totalReward =
-                    totalReward +
-                    computeStakeReward(stakeholders[i].address_stakes[j]);
-            }
-        }
-        return totalReward;
     }
 
     function getTotalStakedOfStaker(address staker)
@@ -257,7 +223,7 @@ contract Vault is ReentrancyGuard, Ownable {
         return totalStaked;
     }
 
-    function computeTotalReward() external view returns (uint256) {
+    function computeTotalRewardsByStaker() external view returns (uint256) {
         uint256 user_index = stakes[msg.sender];
         uint256 totalReward;
 

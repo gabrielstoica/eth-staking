@@ -1,22 +1,35 @@
 import { ethers } from "hardhat";
+import {
+  AggregatorGoerliETHUSDAddress,
+  cETHGoerliContractAddress,
+  TOTAL_SUPPLY_dUSDC,
+} from "../config";
+import { DevUSDC, DevUSDC__factory, Vault, Vault__factory } from "../typechain-types";
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-  const unlockTime = currentTimestampInSeconds + ONE_YEAR_IN_SECS;
+  const devUSDFactory: DevUSDC__factory = <DevUSDC__factory>(
+    await ethers.getContractFactory("devUSDC")
+  );
+  const devUSDC: DevUSDC = <DevUSDC>await devUSDFactory.deploy(TOTAL_SUPPLY_dUSDC);
+  await devUSDC.deployed();
 
-  const lockedAmount = ethers.utils.parseEther("1");
+  const vaultFactory: Vault__factory = <Vault__factory>await ethers.getContractFactory("Vault");
+  const vault: Vault = <Vault>(
+    await vaultFactory.deploy(
+      devUSDC.address,
+      AggregatorGoerliETHUSDAddress,
+      cETHGoerliContractAddress
+    )
+  );
+  await vault.deployed();
 
-  const Lock = await ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
+  //transfer all devUSDC to Vault to easily send rewards
+  await devUSDC.transfer(vault.address, TOTAL_SUPPLY_dUSDC);
 
-  await lock.deployed();
-
-  console.log(`Lock with 1 ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`);
+  console.log("devUSDC address: ", devUSDC.address);
+  console.log("Vault address: ", vault.address);
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;

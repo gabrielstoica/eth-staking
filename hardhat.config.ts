@@ -2,6 +2,7 @@ import { HardhatUserConfig } from "hardhat/config";
 import { config as dotenvConfig } from "dotenv";
 import { resolve } from "path";
 import "@nomicfoundation/hardhat-toolbox";
+import "@nomiclabs/hardhat-etherscan";
 import { NetworkUserConfig } from "hardhat/types";
 
 const dotenvConfigPath: string = process.env.DOTENV_CONFIG_PATH || "./.env";
@@ -43,6 +44,9 @@ function getChainConfig(chainAbbreviation: keyof typeof chainsConfig): NetworkUs
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
+  etherscan: {
+    apiKey: { goerli: process.env.ETHERSCAN_API_KEY || "" },
+  },
   networks: {
     hardhat: {
       accounts: {
