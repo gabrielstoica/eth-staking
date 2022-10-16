@@ -6,7 +6,7 @@ pragma solidity ^0.8.15;
  * @notice CToken which wraps Ether
  * @author Compound
  */
-interface CEther {
+abstract contract CEther {
     function transfer(address dst, uint256 amount)
         external
         virtual
@@ -44,4 +44,6 @@ interface CEther {
         external
         virtual
         returns (uint256);
+
+    function exchangeRateCurrent() external virtual returns (uint256);
 }

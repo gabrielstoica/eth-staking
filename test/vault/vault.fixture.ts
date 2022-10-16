@@ -5,14 +5,24 @@ import {
   AggregatorGoerliETHUSDAddress,
   TOTAL_SUPPLY_dUSDC,
   MINIMUM_AMOUNT,
+  VAULT_INITIAL_BALANCE,
   cETHGoerliContractAddress,
 } from "../../config";
-import { DevUSDC, DevUSDC__factory, Vault, Vault__factory } from "../../typechain-types";
+import {
+  CEther,
+  CEther__factory,
+  DevUSDC,
+  DevUSDC__factory,
+  Vault,
+  Vault__factory,
+} from "../../typechain-types";
 
 export async function deployVaultFixture(): Promise<{
   vault: Vault;
   devUSDC: DevUSDC;
+  compoundETH: CEther;
   MINIMUM_AMOUNT: BigNumber;
+  VAULT_INITIAL_BALANCE: BigNumber;
 }> {
   const signers: SignerWithAddress[] = await ethers.getSigners();
   const owner: SignerWithAddress = signers[0];
@@ -31,8 +41,21 @@ export async function deployVaultFixture(): Promise<{
   );
   await vault.deployed();
 
+  const compoundETH: CEther = <CEther>(
+    await ethers.getContractAt("CEther", cETHGoerliContractAddress)
+  );
+
   //transfer all devUSDC to Vault to easily send rewards
   await devUSDC.transfer(vault.address, TOTAL_SUPPLY_dUSDC);
 
-  return { vault, devUSDC, MINIMUM_AMOUNT };
+  //send 1 ETH from owner account
+  //so we can pay back the small difference between
+  //staked amount and redeemed amount
+  //caused by the Compound exchangeRate variation
+  await owner.sendTransaction({
+    to: vault.address,
+    value: ethers.utils.parseEther("1"),
+  });
+
+  return { vault, devUSDC, compoundETH, MINIMUM_AMOUNT, VAULT_INITIAL_BALANCE };
 }

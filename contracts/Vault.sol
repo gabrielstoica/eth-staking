@@ -41,6 +41,8 @@ contract Vault is ReentrancyGuard, Ownable {
         uint256 timestamp
     );
 
+    event Received(address, uint256);
+
     mapping(address => uint256) internal stakes;
     mapping(address => uint256) internal lastStakeId;
     Stakeholder[] internal stakeholders;
@@ -81,7 +83,9 @@ contract Vault is ReentrancyGuard, Ownable {
         uint256 index = stakes[msg.sender];
         uint256 timestamp = block.timestamp;
 
-        uint256 cETHBalanceBefore = compoundETH.balanceOf(msg.sender);
+        uint256 rate = compoundETH.exchangeRateCurrent();
+        rate = rate.div(1e18);
+        uint256 cETH = amount.div(rate);
 
         //add to Compound v2
         (bool success, ) = address(compoundETH).call{value: amount}(
@@ -89,18 +93,11 @@ contract Vault is ReentrancyGuard, Ownable {
         );
         require(success, "Stake failed.");
 
-        uint256 cETHBalanceAfter = compoundETH.balanceOf(msg.sender);
-
         if (index == 0) {
             index = addStakeholder(msg.sender);
         }
 
-        Stake memory new_stake = Stake(
-            msg.sender,
-            amount,
-            timestamp,
-            cETHBalanceAfter - cETHBalanceBefore
-        );
+        Stake memory new_stake = Stake(msg.sender, amount, timestamp, cETH);
         stakeholders[index].address_stakes.push(new_stake);
         lastStakeId[msg.sender]++;
 
@@ -150,19 +147,27 @@ contract Vault is ReentrancyGuard, Ownable {
     function withdrawStake(uint256 stakeIndex) public nonReentrant {
         uint256 user_index = stakes[msg.sender];
         //require user_index >= 1 at least 1 stake
+        //require msg.sender === owner of stake
 
         Stake memory currentStake = stakeholders[user_index].address_stakes[
             stakeIndex
         ];
         uint256 currentStakeAmount = currentStake.amount;
+        uint256 currentStakecETH = currentStake.cETH;
 
         //redeem staked ETH from Compound v2
-        compoundETH.redeemUnderlying(currentStakeAmount);
+        (bool success, ) = address(compoundETH).call(
+            abi.encodeWithSignature(
+                "redeemUnderlying(uint256)",
+                currentStakeAmount
+            )
+        );
+        require(success, "Reedem from Compound v2 failed. ");
 
         // reward computed in usd -> dUSDC
         uint256 reward = computeStakeReward(currentStake);
 
-        (bool success, ) = msg.sender.call{value: currentStakeAmount}("");
+        (success, ) = msg.sender.call{value: currentStakeAmount}("");
         require(success, "Withdraw failed.");
 
         dUSDC.transfer(msg.sender, reward);
@@ -170,10 +175,6 @@ contract Vault is ReentrancyGuard, Ownable {
         totalAmountStaked = totalAmountStaked - currentStakeAmount;
         currentStake.amount = 0;
         delete stakeholders[user_index].address_stakes[stakeIndex];
-    }
-
-    function withdrawTokens(uint256 amount) external onlyOwner {
-        dUSDC.transfer(msg.sender, amount);
     }
 
     function getLatestPrice() public view returns (uint256) {
@@ -268,35 +269,6 @@ contract Vault is ReentrancyGuard, Ownable {
         return totalReward;
     }
 
-    function forceStop() external onlyOwner {
-        uint256 stakeReward;
-        uint256 stakeAmount;
-        address staker;
-
-        for (uint256 i = 1; i < stakeholders.length; i++) {
-            stakeReward = 0;
-            stakeAmount = 0;
-            staker = stakeholders[i].user;
-            for (
-                uint256 j = 0;
-                j < stakeholders[i].address_stakes.length;
-                j++
-            ) {
-                stakeAmount =
-                    stakeAmount +
-                    stakeholders[i].address_stakes[j].amount;
-                stakeReward =
-                    stakeReward +
-                    computeStakeReward(stakeholders[i].address_stakes[j]);
-                stakeholders[i].address_stakes[j].amount = 0;
-                delete stakeholders[i].address_stakes[j];
-            }
-            dUSDC.transfer(staker, stakeAmount + stakeReward);
-        }
-
-        paused = true;
-    }
-
     function getStakesNumber() external view returns (uint256) {
         uint256 user_index = stakes[msg.sender];
         return stakeholders[user_index].address_stakes.length;
@@ -313,5 +285,9 @@ contract Vault is ReentrancyGuard, Ownable {
 
     function setPaused(bool _state) external onlyOwner {
         paused = _state;
+    }
+
+    receive() external payable {
+        emit Received(msg.sender, msg.value);
     }
 }

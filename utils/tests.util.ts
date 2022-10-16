@@ -12,13 +12,16 @@ export async function computeReward(amount: BigNumber, days: number): Promise<{ 
   const addr = AggregatorGoerliETHUSDAddress;
   const priceFeedContract = new ethers.Contract(addr, aggregatorV3InterfaceABI, provider);
   const priceData = await priceFeedContract.latestRoundData();
+
+  //price is scaled by 10^18 so we have to normalize it
   const ethUsd = Math.trunc(priceData.answer / 1e8);
 
   let amountToEth = Number(ethers.utils.formatEther(amount));
+
   //10% APR => 0.001141% (10 / (365 * 24))
   const rewardPerHour = 0.00001141;
   const rewardPerDays = rewardPerHour * days * 24;
-  const reward: string = (ethUsd * amountToEth * rewardPerDays).toFixed(6);
+  const reward: string = (ethUsd * amountToEth * rewardPerDays).toFixed(7);
 
   return { reward };
 }

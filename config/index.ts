@@ -54,4 +54,5 @@ export const aggregatorV3InterfaceABI = [
 export const AggregatorGoerliETHUSDAddress: string = "0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e";
 export const cETHGoerliContractAddress: string = "0x64078a6189Bf45f80091c6Ff2fCEe1B15Ac8dbde";
 export const MINIMUM_AMOUNT: BigNumber = ethers.utils.parseEther("5");
+export const VAULT_INITIAL_BALANCE: BigNumber = ethers.utils.parseEther("1");
 export const TOTAL_SUPPLY_dUSDC: BigNumber = ethers.utils.parseEther("1000000");
