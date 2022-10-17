@@ -20,7 +20,7 @@ yarn install
 Compile smart contracts with hardhat
 
 ```bash
-npx hardhat compile
+yarn hardhat compile
 ```
 
 ### Test
@@ -28,7 +28,7 @@ npx hardhat compile
 Run tests with hardhat
 
 ```bash
-npx hardhat test
+yarn hardhat test
 ```
 
 ### Deploy
@@ -37,7 +37,7 @@ In order to deploy both smart contracts, you have to run the deploy script and s
 Example:
 
 ```bash
-npx hardhat run .\scripts\deploy.ts --network goerli
+yarn hardhat run .\scripts\deploy.ts --network goerli
 ```
 
 ### Verify
@@ -46,12 +46,12 @@ In order to verify the devUSDC smart contract, you need to provide it's address 
 Example:
 
 ```bash
-npx hardhat verify --network goerli devUSDC_address TOTAL_SUPPLY_dUSDC
+yarn hardhat verify --network goerli devUSDC_address TOTAL_SUPPLY_dUSDC
 ```
 
 In order to verify the Vault smart contract, you need to provide it's address togheter with all the constructor params.
 Example:
 
 ```bash
-npx hardhat verify --network goerli vault_address devUSDCAddress AggregatorGoerliETHUSDAddress cETHGoerliContractAddress
+yarn hardhat verify --network goerli vault_address devUSDCAddress AggregatorGoerliETHUSDAddress cETHGoerliContractAddress
 ```
