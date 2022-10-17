@@ -21,7 +21,7 @@ export async function computeReward(amount: BigNumber, days: number): Promise<{ 
   //10% APR => 0.001141% (10 / (365 * 24))
   const rewardPerHour = 0.00001141;
   const rewardPerDays = rewardPerHour * days * 24;
-  const reward: string = (ethUsd * amountToEth * rewardPerDays).toFixed(7);
+  const reward: string = (ethUsd * amountToEth * rewardPerDays).toFixed(6);
 
   return { reward };
 }

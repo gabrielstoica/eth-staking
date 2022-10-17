@@ -151,10 +151,12 @@ contract Vault is ReentrancyGuard, Ownable {
         dUSDC.transfer(msg.sender, reward);
     }
 
-    function withdrawStake(uint256 stakeIndex) public nonReentrant {
+    function withdrawStake(uint256 stakeIndex)
+        public
+        isValidStake(stakeIndex)
+        nonReentrant
+    {
         uint256 user_index = stakes[msg.sender];
-        //require user_index >= 1 at least 1 stake
-        //require msg.sender === owner of stake
 
         Stake memory currentStake = stakeholders[user_index].address_stakes[
             stakeIndex
