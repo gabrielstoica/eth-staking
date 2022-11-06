@@ -2,9 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
@@ -46,15 +46,6 @@ contract Vault is ReentrancyGuard, Ownable {
     mapping(address => uint256) internal lastStakeId;
     Stakeholder[] internal stakeholders;
 
-    modifier canStake() {
-        require(!paused, "Staking is currently paused!");
-        require(
-            msg.value >= minimumAmountToStake,
-            "Minimum amount to stake is 5 ETH"
-        );
-        _;
-    }
-
     modifier isValidStake(uint256 stakeIndex) {
         require(
             stakeIndex >= 0 && stakeIndex <= lastStakeId[msg.sender],
@@ -91,7 +82,13 @@ contract Vault is ReentrancyGuard, Ownable {
         return userIndex;
     }
 
-    function stake() external payable canStake nonReentrant {
+    function stake() external payable {
+        require(!paused, "Staking is currently paused!");
+        require(
+            msg.value >= minimumAmountToStake,
+            "Minimum amount to stake is 5 ETH"
+        );
+
         uint256 amount = msg.value;
         uint256 index = stakes[msg.sender];
         uint256 timestamp = block.timestamp;
@@ -125,11 +122,12 @@ contract Vault is ReentrancyGuard, Ownable {
         uint256 ethUsd = getLatestPrice();
 
         uint256 reward = currentTimestamp.sub(sinceIsStaking);
-        reward = reward.div(1 hours);
         reward = reward.mul(currentStake.amount);
         reward = reward.mul(ethUsd);
         reward = reward.mul(1141);
         reward = reward.div(10**8);
+        reward = reward.div(1 hours);
+
         return reward;
     }
 

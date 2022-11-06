@@ -97,9 +97,9 @@ describe.only("Vault unit tests", function () {
         //ETH balance (underlying asset) in the Compound v2
         const expectedUnderlyingBalance: number = exchangeRateCurrent * cEthBalance;
 
-        //at least last 15 decimals
-        expect(cUnderlyingBalance.toPrecision(15)).to.equal(
-          expectedUnderlyingBalance.toPrecision(15)
+        //at least 10 decimals precision
+        expect(cUnderlyingBalance.toPrecision(10)).to.equal(
+          expectedUnderlyingBalance.toPrecision(10)
         );
       });
 
@@ -192,7 +192,9 @@ describe.only("Vault unit tests", function () {
         await this.vault.connect(this.signers.addr1).computeRewardPerStake(0)
       );
 
-      const rewardComputedByVault: string = ethers.utils.formatEther(rewardComputedByVaultBN);
+      const rewardComputedByVault: string = Number(
+        ethers.utils.formatEther(rewardComputedByVaultBN)
+      ).toPrecision(4);
 
       expect(rewardComputedByVault).to.equal(reward);
     });
@@ -203,7 +205,9 @@ describe.only("Vault unit tests", function () {
         await this.vault.connect(this.signers.addr1).computeTotalRewardsByStaker()
       );
 
-      const rewardComputedByVault: string = ethers.utils.formatEther(rewardComputedByVaultBN);
+      const rewardComputedByVault: string = Number(
+        ethers.utils.formatEther(rewardComputedByVaultBN)
+      ).toPrecision(4);
 
       expect(rewardComputedByVault).to.equal(reward);
     });
@@ -214,7 +218,9 @@ describe.only("Vault unit tests", function () {
       const balanceOfAddr1BNdevUSDC: BigNumber = <BigNumber>(
         await this.devUSDC.balanceOf(this.signers.addr1.address)
       );
-      const balanceOfAddr1devUSDC: string = ethers.utils.formatEther(balanceOfAddr1BNdevUSDC);
+      const balanceOfAddr1devUSDC: string = Number(
+        ethers.utils.formatEther(balanceOfAddr1BNdevUSDC)
+      ).toPrecision(4);
 
       const { reward } = await computeReward(this.MINIMUM_AMOUNT, 1);
       //send the reward to user and reset the since parameter
@@ -246,7 +252,9 @@ describe.only("Vault unit tests", function () {
         const balanceOfAddr1BNdevUSDC: BigNumber = <BigNumber>(
           await this.devUSDC.balanceOf(this.signers.addr1.address)
         );
-        const balanceOfAddr1devUSDC: string = ethers.utils.formatEther(balanceOfAddr1BNdevUSDC);
+        const balanceOfAddr1devUSDC: string = Number(
+          ethers.utils.formatEther(balanceOfAddr1BNdevUSDC)
+        ).toPrecision(4);
 
         const { reward } = await computeReward(this.MINIMUM_AMOUNT, 1);
         expect(balanceOfAddr1devUSDC).to.equal(reward);
@@ -315,17 +323,17 @@ describe.only("Vault unit tests", function () {
         const balanceOfAddr1BN: BigNumber = <BigNumber>(
           await this.devUSDC.balanceOf(this.signers.addr1.address)
         );
-        let balanceOfAddr1 = ethers.utils.formatEther(balanceOfAddr1BN);
+        let balanceOfAddr1 = Number(ethers.utils.formatEther(balanceOfAddr1BN)).toPrecision(4);
 
         const balanceOfAddr2BN: BigNumber = <BigNumber>(
           await this.devUSDC.balanceOf(this.signers.addr2.address)
         );
-        let balanceOfAddr2 = ethers.utils.formatEther(balanceOfAddr2BN);
+        let balanceOfAddr2 = Number(ethers.utils.formatEther(balanceOfAddr2BN)).toPrecision(4);
 
         const balanceOfAddr3BN: BigNumber = <BigNumber>(
           await this.devUSDC.balanceOf(this.signers.addr3.address)
         );
-        let balanceOfAddr3: string = <string>ethers.utils.formatEther(balanceOfAddr3BN);
+        let balanceOfAddr3 = Number(ethers.utils.formatEther(balanceOfAddr3BN)).toPrecision(4);
 
         const { reward } = await computeReward(this.MINIMUM_AMOUNT, 1);
         expect(balanceOfAddr1).to.equal(reward);
