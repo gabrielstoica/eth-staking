@@ -56,3 +56,4 @@ export const cETHGoerliContractAddress: string = "0x64078a6189Bf45f80091c6Ff2fCE
 export const MINIMUM_AMOUNT: BigNumber = ethers.utils.parseEther("5");
 export const VAULT_INITIAL_BALANCE: BigNumber = ethers.utils.parseEther("1");
 export const TOTAL_SUPPLY_dUSDC: BigNumber = ethers.utils.parseEther("1000000");
+export const AUTOMATIC_VERIFICATION: boolean = false;

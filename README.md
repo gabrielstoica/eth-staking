@@ -1,6 +1,9 @@
 # ETH staking vault
 
-Simple ETH staking smart contracts for an ETH staking app. Users can stake their ETH in a Vault with a constant APR 10%.  
+Simple ETH staking smart contract for an ETH staking app. Users can stake their ETH in a Vault with a constant APR 10% rewarded in devUSDC, a ERC20 stablecoin pegged to the U.S. dollar.  
+All the staked ETH will be put as collateral in [Compound v2 Protocol](https://docs.compound.finance/v2/).
+When a user wants to withdraw their stake, the Vault will redeem the underlying asset (ETH) from Compound and will give back to the user togheter with the devUSDC rewards.  
+The yields are kept by the Vault as profit.
 Each user can stake multiple times, each stake being recorded as an independent one.
 
 ## Usage
@@ -42,14 +45,16 @@ yarn hardhat run .\scripts\deploy.ts --network goerli
 
 ### Verify
 
-In order to verify the devUSDC smart contract, you need to provide it's address togheter with total supply set at the deployment time (TOTAL_SUPPLY_dUSDC variable stored in the /config).
+The deployment script can automatically verify both Vault and devUSDC smart contract. By default, this feature is disabled. To enable it, set the `AUTOMATIC_VERIFICATION` to true in the `config/index.ts` file.
+
+In order to manually verify the devUSDC smart contract, you need to provide it's address togheter with the total supply set at the deployment time (TOTAL_SUPPLY_dUSDC variable stored in the /config).
 Example:
 
 ```bash
 yarn hardhat verify --network goerli devUSDC_address TOTAL_SUPPLY_dUSDC
 ```
 
-In order to verify the Vault smart contract, you need to provide it's address togheter with all the constructor params.
+In order to manually verify the Vault smart contract, you need to provide it's address togheter with all the constructor parameters.
 Example:
 
 ```bash
