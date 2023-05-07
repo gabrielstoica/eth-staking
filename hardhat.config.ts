@@ -13,9 +13,9 @@ if (!INFURA_API_KEY) {
   throw new Error("Infura API Key is missing from the .env file. Aborting...");
 }
 
-const MNEMONIC: string = process.env.MNEMONIC || "";
-if (!MNEMONIC) {
-  throw new Error("Mnemonic is missing from the .env file. Aborting...");
+const PRIVATE_KEY: string = process.env.PRIVATE_KEY || "";
+if (!PRIVATE_KEY) {
+  throw new Error("Private key is missing from the .env file. Aborting...");
 }
 
 const chainsConfig = {
@@ -32,11 +32,12 @@ const chainsConfig = {
 function getChainConfig(chainAbbreviation: keyof typeof chainsConfig): NetworkUserConfig {
   const chainConfig = chainsConfig[chainAbbreviation];
   return {
-    accounts: {
+    accounts: [PRIVATE_KEY],
+    /*  accounts: {
       count: 10,
       mnemonic: MNEMONIC,
       path: "m/44'/60'/0'/0",
-    },
+    }, */
     chainId: chainConfig.chainId,
     url: chainConfig.rpcURL,
   };
@@ -49,9 +50,6 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
-      accounts: {
-        mnemonic: MNEMONIC,
-      },
       forking: {
         url: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
       },

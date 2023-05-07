@@ -176,7 +176,7 @@ contract Vault is ReentrancyGuard, Ownable {
         (, int256 price, , , ) = priceFeed.latestRoundData();
 
         //  divide by 10 ** 8 because price is scaled up
-        uint256 _price = uint256(price).div(1e8);
+        uint256 _price = uint256(price) / 1e8;
         return _price;
     }
 
