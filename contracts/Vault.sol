@@ -12,8 +12,6 @@ import "./devUSDC.sol";
 import "./lib/cETH.sol";
 
 contract Vault is ReentrancyGuard, Ownable {
-    using SafeMath for uint256;
-
     devUSDC public immutable dUSDC;
     CEther public compoundETH;
     AggregatorV3Interface internal priceFeed;
@@ -111,31 +109,24 @@ contract Vault is ReentrancyGuard, Ownable {
         emit Staked(msg.sender, amount, index, timestamp);
     }
 
-    function computeStakeReward(Stake memory currentStake)
-        internal
-        view
-        returns (uint256)
-    {
-        //APR 10% => rewardPerHour = 0.001141% ( 10 / (365 * 24))
+    function computeStakeReward(
+        Stake memory currentStake
+    ) internal view returns (uint256) {
+        // APR 10%
         uint256 sinceIsStaking = currentStake.since;
         uint256 currentTimestamp = block.timestamp;
         uint256 ethUsd = getLatestPrice();
 
-        uint256 reward = currentTimestamp.sub(sinceIsStaking);
-        reward = reward.mul(currentStake.amount);
-        reward = reward.mul(ethUsd);
-        reward = reward.mul(1141);
-        reward = reward.div(10**8);
-        reward = reward.div(1 hours);
+        uint256 timeDiff = currentTimestamp - sinceIsStaking;
+        uint256 reward = (currentStake.amount * timeDiff * 10 * ethUsd) /
+            365 days;
 
         return reward;
     }
 
-    function harvestReward(uint256 stakeIndex)
-        public
-        isValidStake(stakeIndex)
-        nonReentrant
-    {
+    function harvestReward(
+        uint256 stakeIndex
+    ) public isValidStake(stakeIndex) nonReentrant {
         uint256 user_index = stakes[msg.sender];
         Stake memory currentStake = stakeholders[user_index].address_stakes[
             stakeIndex
@@ -149,11 +140,9 @@ contract Vault is ReentrancyGuard, Ownable {
         dUSDC.transfer(msg.sender, reward);
     }
 
-    function withdrawStake(uint256 stakeIndex)
-        public
-        isValidStake(stakeIndex)
-        nonReentrant
-    {
+    function withdrawStake(
+        uint256 stakeIndex
+    ) public isValidStake(stakeIndex) nonReentrant {
         uint256 user_index = stakes[msg.sender];
 
         Stake memory currentStake = stakeholders[user_index].address_stakes[
@@ -191,12 +180,9 @@ contract Vault is ReentrancyGuard, Ownable {
         return _price;
     }
 
-    function computeRewardPerStake(uint256 stakeIndex)
-        public
-        view
-        isValidStake(stakeIndex)
-        returns (uint256)
-    {
+    function computeRewardPerStake(
+        uint256 stakeIndex
+    ) public view isValidStake(stakeIndex) returns (uint256) {
         uint256 user_index = stakes[msg.sender];
         Stake memory currentStake = stakeholders[user_index].address_stakes[
             stakeIndex
@@ -206,12 +192,9 @@ contract Vault is ReentrancyGuard, Ownable {
         return reward;
     }
 
-    function getTotalStakedOfStaker(address staker)
-        external
-        view
-        onlyOwner
-        returns (uint256)
-    {
+    function getTotalStakedOfStaker(
+        address staker
+    ) external view onlyOwner returns (uint256) {
         uint256 totalStaked;
         uint256 user_index = stakes[staker];
 

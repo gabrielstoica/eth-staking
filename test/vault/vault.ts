@@ -7,7 +7,7 @@ import { computeReward, convertDaysToTimestamp } from "../../utils/tests.util";
 import { Signers } from "../types";
 import { deployVaultFixture } from "./vault.fixture";
 
-describe.only("Vault unit tests", function () {
+describe("Vault unit tests", function () {
   before(async function () {
     this.signers = {} as Signers;
 
